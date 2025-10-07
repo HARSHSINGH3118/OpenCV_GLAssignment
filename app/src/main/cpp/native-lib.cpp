@@ -1,46 +1,62 @@
+// app/src/main/cpp/native-lib.cpp
 #include <jni.h>
-#include <android/log.h>
 #include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
 
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "native", __VA_ARGS__)
+static void yuv420ToBgr(
+        const uint8_t* y, const uint8_t* u, const uint8_t* v,
+        int yStride, int uStride, int vStride,
+        int w, int h,
+        cv::Mat& bgr) {
+
+    cv::Mat yMat(h, w, CV_8UC1, const_cast<uint8_t*>(y), yStride);
+    cv::Mat uMat(h/2, w/2, CV_8UC1, const_cast<uint8_t*>(u), uStride);
+    cv::Mat vMat(h/2, w/2, CV_8UC1, const_cast<uint8_t*>(v), vStride);
+
+    cv::Mat uUp, vUp;
+    cv::resize(uMat, uUp, {w, h}, 0, 0, cv::INTER_NEAREST);
+    cv::resize(vMat, vUp, {w, h}, 0, 0, cv::INTER_NEAREST);
+
+    // NOTE: Many devices deliver Y, Cb, Cr or Y, Cr, Cb; if colors look wrong, swap uUp/vUp below
+    std::vector<cv::Mat> yuv = { yMat, vUp, uUp }; // Y,Cr,Cb ordering works well in practice
+    cv::Mat yuvImg; cv::merge(yuv, yuvImg);
+
+    cv::cvtColor(yuvImg, bgr, cv::COLOR_YCrCb2BGR);
+}
 
 extern "C"
 JNIEXPORT jbyteArray JNICALL
-Java_com_example_opencv_1gl_1assignment_MainActivity_cannyProcessImage(
-        JNIEnv* env, jobject, jstring jInputPath) {
+Java_com_example_opencv_1gl_1assignment_MainActivity_processFrameYuv420(
+        JNIEnv* env, jobject,
+        jbyteArray jy, jbyteArray ju, jbyteArray jv,
+        jint yStride, jint uStride, jint vStride,
+        jint width, jint height, jint mode) {
 
-    const char* inputPath = env->GetStringUTFChars(jInputPath, nullptr);
-    std::string inPath(inputPath);
-    env->ReleaseStringUTFChars(jInputPath, inputPath);
+    jbyte* Y = env->GetByteArrayElements(jy, nullptr);
+    jbyte* U = env->GetByteArrayElements(ju, nullptr);
+    jbyte* V = env->GetByteArrayElements(jv, nullptr);
 
-    // Load the input image
-    cv::Mat img = cv::imread(inPath, cv::IMREAD_COLOR);
-    if (img.empty()) {
-        LOGI("Failed to read image: %s", inPath.c_str());
-        return nullptr;
+    cv::Mat bgr;
+    yuv420ToBgr((uint8_t*)Y, (uint8_t*)U, (uint8_t*)V,
+                yStride, uStride, vStride, width, height, bgr);
+
+    cv::Mat outRGBA;
+    if (mode == 1) {
+        cv::Mat gray, edges;
+        cv::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
+        cv::Canny(gray, edges, 80, 160);
+        cv::cvtColor(edges, outRGBA, cv::COLOR_GRAY2RGBA);
+    } else {
+        cv::cvtColor(bgr, outRGBA, cv::COLOR_BGR2RGBA);
     }
 
-    // Convert to grayscale
-    cv::Mat gray;
-    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    const size_t sz = outRGBA.total() * outRGBA.elemSize();
+    jbyteArray jrgba = env->NewByteArray((jsize)sz);
+    env->SetByteArrayRegion(jrgba, 0, (jsize)sz, reinterpret_cast<jbyte*>(outRGBA.data));
 
-    // Run Canny edge detection
-    cv::Mat edges;
-    cv::Canny(gray, edges, 80, 160);
-
-    // Convert edges to 3-channel (for viewing/saving)
-    cv::Mat colorEdges;
-    cv::cvtColor(edges, colorEdges, cv::COLOR_GRAY2BGR);
-
-    // Encode as JPEG to memory
-    std::vector<uchar> buf;
-    cv::imencode(".jpg", colorEdges, buf);
-
-    // Return as byte array
-    jbyteArray jbytes = env->NewByteArray(buf.size());
-    env->SetByteArrayRegion(jbytes, 0, buf.size(), reinterpret_cast<jbyte*>(buf.data()));
-    return jbytes;
+    env->ReleaseByteArrayElements(jy, Y, 0);
+    env->ReleaseByteArrayElements(ju, U, 0);
+    env->ReleaseByteArrayElements(jv, V, 0);
+    return jrgba;
 }

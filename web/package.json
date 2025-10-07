@@ -1,0 +1,15 @@
+{
+  "name": "edge-viewer",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start": "npx http-server dist -p 5173"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}

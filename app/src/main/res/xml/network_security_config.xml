@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permit HTTP to your local dev servers (IP literal hostnames) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.1.97.61</domain>
+        <domain includeSubdomains="false">10.1.97.45</domain>
+        <!-- Add more LAN IPs if you switch machines -->
+        <!-- <domain>192.168.1.100</domain> -->
+    </domain-config>
+</network-security-config>

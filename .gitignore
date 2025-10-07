@@ -1,15 +1,43 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# ---- General ----
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+Thumbs.db
+.vscode/
+*.log
+*.tmp
+
+# ---- Android / Gradle ----
+.gradle/
+**/build/
+**/.cxx/
 local.properties
+*.iml
+.idea/
+.externalNativeBuild/
+captures/
+.navigation/
+*.keystore
+*.jks
+# Outputs
+app/release/
+app/debug/
+*.apk
+*.aab
+
+# Keep Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# ---- Node/Web ----
+web/node_modules/
+web/uploads/
+web/tmp/
+web/.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# If you build a separate 'build' folder under web, ignore it:
+web/build/
+
+# NOTE: we intentionally keep web/dist/ tracked because the server serves from dist.
+# If you prefer to ignore dist, remove the next line’s comment and rebuild on deploy.
+# web/dist/
