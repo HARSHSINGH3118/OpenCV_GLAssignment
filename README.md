@@ -12,6 +12,9 @@ Camera frames are captured with **Camera2**, processed natively in **C++/OpenCV*
 
 ---
 
+## Demo Video
+https://drive.google.com/file/d/1Hz6Sk_qFZHTyM1GJVxM8REkyq6z2OYwm/view?usp=sharing
+
 ## System Architecture
 
           ┌──────────────────────────────────────────────────────────────────┐
