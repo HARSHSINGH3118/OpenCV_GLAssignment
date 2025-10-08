@@ -2,78 +2,205 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Edge Viewer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>edgeX — Real-Time Edge Detection</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
-        body {
-          font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          background: #f5f6fa;
-          color: #222;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          margin: 0;
+        :root{
+          --bg:#06090f; --bg2:#0b1220;
+          --panel:#0f1726; --panel2:#101b2b;
+          --text:#eaf0f7; --muted:#a3b3c8;
+          --brand:#6c63ff; --accent:#4ee7ff; --ok:#22e3d1;
+          --ring:rgba(78,231,255,.45);
         }
-        .card {
-          background: white;
-          padding: 24px 28px;
-          border-radius: 16px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-          text-align: center;
-          width: min(500px, 90vw);
+        *{box-sizing:border-box}
+        html,body{height:100%}
+        body{
+          margin:0; color:var(--text);
+          font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+          background:
+            radial-gradient(1100px 700px at 15% -20%, rgba(108,99,255,.18), transparent 60%),
+            radial-gradient(900px 600px at 95% 5%, rgba(78,231,255,.18), transparent 60%),
+            linear-gradient(180deg,var(--bg),var(--bg2));
+          overflow-x:hidden;
         }
-        h2 {
-          margin-bottom: 10px;
+        .container{max-width:1260px;margin:0 auto;padding:24px; position:relative; z-index:1;}
+
+        header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+        .brand{display:flex;gap:14px;align-items:center}
+        .logo{width:46px;height:46px;border-radius:14px;background:conic-gradient(from 210deg, var(--brand), var(--accent), var(--brand));
+          box-shadow:0 10px 26px rgba(78,231,255,.32), inset 0 0 18px rgba(255,255,255,.14)}
+        h1{margin:0;letter-spacing:.3px;font-weight:900;line-height:1.05;
+          background: linear-gradient(90deg, #fff, #dff9ff 45%, #a9f0ff);
+          -webkit-background-clip:text; background-clip:text; color:transparent;}
+
+        nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .tab{appearance:none;border:none;background:transparent;color:var(--muted);font-weight:800;padding:10px 14px;border-radius:12px;cursor:pointer}
+        .tab[data-active="true"]{color:#061018;background:linear-gradient(135deg,var(--brand),var(--accent));box-shadow:0 10px 24px rgba(78,231,255,.28)}
+        .live{display:flex;align-items:center;gap:10px}
+        .dot{width:10px;height:10px;border-radius:999px;background:var(--ok);box-shadow:0 0 18px var(--ok);animation:pulse 1.8s ease-in-out infinite}
+        @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+        .subtitle{color:var(--muted);margin-top:4px;font-size:14px}
+
+        .page{display:none}
+        .page[data-visible="true"]{display:block}
+
+        .hero{display:grid;gap:22px;grid-template-columns:1.25fr 1fr}
+        @media (max-width:980px){.hero{grid-template-columns:1fr}}
+
+        .card{
+          position:relative; overflow:hidden;
+          background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+          border:1px solid rgba(255,255,255,.08);
+          border-radius:20px; padding:20px;
+          box-shadow:0 12px 36px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
         }
-        canvas {
-          border-radius: 10px;
-          width: 100%;
-          max-height: 400px;
-          object-fit: contain;
+        .card::before{
+          content:""; position:absolute; inset:-2px; border-radius:22px;
+          background: conic-gradient(from 210deg, transparent, var(--ring) 20%, transparent 60%);
+          filter: blur(22px); opacity:.38; z-index:0; pointer-events:none; animation:rotate 16s linear infinite;
         }
-        #stats {
-          margin: 8px 0 18px;
-          font-size: 15px;
-          color: #555;
+        @keyframes rotate{to{transform:rotate(360deg)}}
+        .card > *{position:relative; z-index:1}
+        .title{font-size:18px;font-weight:900;margin:2px 0 10px}
+        .small{font-size:13px}
+        .muted{color:var(--muted)}
+
+        .imgWrap{
+          position:relative;border-radius:14px;overflow:hidden;
+          border:1px solid rgba(255,255,255,.09);
+          background: radial-gradient(700px 360px at 0% -25%, rgba(108,99,255,.2), transparent 55%), #09121b;
+          box-shadow: inset 0 0 36px rgba(0,0,0,.42), 0 12px 34px rgba(0,0,0,.35);
         }
-        .upload-btn {
-          background: linear-gradient(135deg, #007bff, #00b4ff);
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 10px 18px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 16px;
-          transition: 0.2s ease;
+        .imgWrap::after{
+          content:""; position:absolute; inset:0;
+          background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,.07) 50%, transparent 80%);
+          transform: translateX(-100%); animation:shine 9s ease-in-out infinite; pointer-events:none;
         }
-        .upload-btn:hover {
-          transform: scale(1.03);
-          background: linear-gradient(135deg, #0069d9, #00a0e6);
-        }
-        input[type="file"] {
-          display: none;
-        }
-        .note {
-          font-size: 13px;
-          color: #777;
-        }
+        @keyframes shine{0%{transform:translateX(-100%)}20%{transform:translateX(120%)}100%{transform:translateX(120%)}}
+        canvas{display:block;width:100%;height:auto}
+
+        .info{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;margin-top:12px}
+        .badge{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);padding:6px 10px;border-radius:999px;display:flex;align-items:center;gap:8px}
+        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .btn{background:linear-gradient(135deg,var(--brand),var(--accent));border:none;color:#061018;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;box-shadow:0 12px 26px rgba(78,231,255,.28);transition:transform .16s ease, filter .16s ease}
+        .btn:hover{transform:translateY(-1px);filter:saturate(1.1)}
+        .link{font-weight:800;word-break:break-all}
+        .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);margin:14px 0}
+
+        .grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+        @media (max-width:700px){.grid{grid-template-columns:1fr}}
+        .chip{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+        .chip b{display:block;margin-bottom:4px}
+
+        footer{opacity:.75;text-align:center;margin-top:26px;font-size:13px}
     </style>
 </head>
 <body>
-<div class="card">
-    <h2>Processed Frame Viewer</h2>
-    <div id="stats">Resolution: — × — • FPS: ~12</div>
-    <canvas id="c"></canvas>
-    <div>
-        <label for="file" class="upload-btn">Load Another Image</label>
-        <input id="file" type="file" accept="image/*">
-        <div class="note">You can replace the sample with any local image.</div>
-    </div>
+<div class="container">
+    <header style="margin-bottom:14px">
+        <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div>
+                <h1>edgeX</h1>
+                <div class="subtitle">Real-time mobile edge detection — OpenCV (C++/JNI) + OpenGL ES</div>
+            </div>
+        </div>
+        <nav>
+            <button class="tab" data-route="#/live">Live</button>
+            <button class="tab" data-route="#/use-cases">Use&nbsp;Cases</button>
+            <button class="tab" data-route="#/about">About</button>
+            <div class="live" style="margin-left:8px">
+                <div class="dot" aria-hidden="true"></div>
+                <span class="muted small">LAN feed</span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- LIVE -->
+        <section id="page-live" class="page" data-visible="true">
+            <div class="hero">
+                <div class="card">
+                    <div class="title">Processed Frame Preview</div>
+                    <div class="muted small">Displays the most recent frame uploaded from the edgeX Android app (EDGE / RAW).</div>
+
+                    <div class="imgWrap" style="margin-top:12px">
+                        <canvas id="c" aria-label="Processed frame canvas"></canvas>
+                    </div>
+
+                    <div class="info">
+                        <div class="badge" id="resBadge">Resolution: — × —</div>
+                        <div class="badge" id="fpsBadge">FPS: ~12</div>
+                        <div class="badge" id="timeBadge">Last updated: —</div>
+                        <div class="badge" id="sizeBadge">Size: —</div>
+                    </div>
+
+                    <div class="row" style="margin-top:14px">
+                        <button class="btn" id="refreshBtn" title="Fetch the latest frame (R)">Refresh now</button>
+                        <span class="muted small">Auto-refresh every <span id="secs">5</span>s</span>
+                    </div>
+
+                    <!-- Hidden legacy stats node for older scripts -->
+                    <div id="stats" style="display:none">Resolution: — × — • FPS: ~12</div>
+                </div>
+
+                <div class="card">
+                    <div class="title">Direct image endpoint</div>
+                    <p class="muted small">Share this URL so others on your LAN can always see the newest processed frame:</p>
+                    <div class="row">
+                        <a class="link" id="latestLink" href="/latest_frame.jpg" target="_blank" rel="noopener">/latest_frame.jpg</a>
+                        <button class="btn" id="copyBtn">Copy</button>
+                    </div>
+                    <div class="hr"></div>
+                    <div class="title">Manual image</div>
+                    <p class="muted small">Load any local image to preview in the canvas:</p>
+                    <div class="row">
+                        <label class="btn" for="file">Load image</label>
+                        <input id="file" type="file" accept="image/*" style="display:none">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- USE CASES -->
+        <section id="page-use-cases" class="page">
+            <div class="card">
+                <div class="title">Where edgeX shines</div>
+                <div class="grid" style="margin-top:6px">
+                    <div class="chip"><div>🔍</div><div><b>Edge-focused inspection</b><span class="muted small">Highlight contours to spot physical defects or irregularities quickly.</span></div></div>
+                    <div class="chip"><div>🏨</div><div><b>Camera monitoring overlays</b><span class="muted small">Edge overlays on CCTV feeds to accentuate outlines for situational awareness. Always follow local laws & privacy rules.</span></div></div>
+                    <div class="chip"><div>🏗️</div><div><b>Architecture & planning</b><span class="muted small">Preview structural edges on-site; capture edge-only views for facade and proportion discussions.</span></div></div>
+                    <div class="chip"><div>🤖</div><div><b>Robotics & navigation</b><span class="muted small">Contours assist scene understanding for SLAM prototypes and line/shape tracking demos.</span></div></div>
+                    <div class="chip"><div>🎓</div><div><b>Education & research</b><span class="muted small">Great for fast classroom demos of Canny-like edges and GPU-backed rendering.</span></div></div>
+                    <div class="chip"><div>🧪</div><div><b>Rapid prototyping</b><span class="muted small">Validate an edge stage before investing in heavier models or cloud components.</span></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT -->
+        <section id="page-about" class="page">
+            <div class="card">
+                <div class="title">What is edgeX?</div>
+                <p class="muted">
+                    <strong>edgeX</strong> is a lightweight Android app dedicated to <b>edge detection</b>. It captures camera
+                    frames, processes edges natively using OpenCV/C++ via JNI (YUV420→RGBA), and renders with OpenGL ES for smooth, low-latency visuals.
+                    The latest processed frame is exposed on your local network for demos and dashboards.
+                </p>
+                <ul class="muted">
+                    <li>Two modes: <em>EDGE</em> and <em>RAW</em></li>
+                    <li>Native pipeline with OpenGL-powered rendering</li>
+                    <li>One-tap capture to gallery + LAN upload</li>
+                </ul>
+                <div class="hr"></div>
+                <p class="muted small">Frame endpoint: <a id="aboutLatest" class="link" href="/latest_frame.jpg" target="_blank" rel="noopener">/latest_frame.jpg</a></p>
+            </div>
+        </section>
+    </main>
+
+    <footer>© <span id="year"></span> edgeX — real-time edge detection on local networks.</footer>
 </div>
 
+<!-- SPA + Live code -->
 <script type="module" src="./index.js"></script>
 </body>
 </html>
